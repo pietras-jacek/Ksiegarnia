@@ -44,9 +44,7 @@ public class VaadinApp extends UI {
 // ========================================================================
         final BeanItemContainer<Book> beanContainer = new BeanItemContainer<Book>(
                 Book.class);
-        beanContainer.addBean(new Book());
-        beanContainer.addBean(new Book());
-        beanContainer.addBean(new Book());
+   
         beanContainer.addBean(new Book("W pustyni i w puszczy", "Marian Opania","2342342342344", 234, 26));
         
         final Table tabela = new Table();
