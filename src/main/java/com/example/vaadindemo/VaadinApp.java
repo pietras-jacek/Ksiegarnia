@@ -1,216 +1,198 @@
 package com.example.vaadindemo;
 
-import com.example.vaadindemo.domain.Person;
-import com.example.vaadindemo.service.PersonManager;
+import com.example.vaadindemo.service.CapitalLeterValidator;
+import com.example.vaadindemo.domain.Book;
+import com.example.vaadindemo.service.ISBNValidator;
+import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.Title;
-import com.vaadin.data.Property;
+import com.vaadin.ui.*;
 import com.vaadin.data.Property.ValueChangeEvent;
+import com.vaadin.data.Property.ValueChangeListener;
 import com.vaadin.data.fieldgroup.FieldGroup;
 import com.vaadin.data.fieldgroup.FieldGroup.CommitException;
 import com.vaadin.data.util.BeanItem;
 import com.vaadin.data.util.BeanItemContainer;
+import com.vaadin.data.validator.DoubleRangeValidator;
+import com.vaadin.data.validator.IntegerRangeValidator;
+import com.vaadin.data.validator.StringLengthValidator;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.FormLayout;
 import com.vaadin.ui.HorizontalLayout;
-import com.vaadin.ui.Label;
 import com.vaadin.ui.Table;
 import com.vaadin.ui.UI;
-import com.vaadin.ui.VerticalLayout;
-import com.vaadin.ui.Window;
 
-@Title("Vaadin Demo App")
+
+@Title("Księgarnia")
+@Theme("valo")
 public class VaadinApp extends UI {
 
-	private static final long serialVersionUID = 1L;
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
 
-	private PersonManager personManager = new PersonManager();
+    @Override
+    protected void init(VaadinRequest request) {
 
-	private Person person = new Person("Jasiu", 1967, "Kowalski");
-	private BeanItem<Person> personItem = new BeanItem<Person>(person);
+        final HorizontalLayout mainLayout = new HorizontalLayout();
 
-	private BeanItemContainer<Person> persons = new BeanItemContainer<Person>(
-			Person.class);
+// ========================================================================
+// Tabele
+// ========================================================================
+        final BeanItemContainer<Book> beanContainer = new BeanItemContainer<Book>(
+                Book.class);
+        beanContainer.addBean(new Book());
+        beanContainer.addBean(new Book());
+        beanContainer.addBean(new Book());
+        beanContainer.addBean(new Book("W pustyni i w puszczy", "Marian Opania","2342342342344", 234, 26));
+        
+        final Table tabela = new Table();
+        tabela.setContainerDataSource(beanContainer);
+        tabela.setSelectable(true);
+        tabela.setImmediate(true);
 
-	enum Action {
-		EDIT, ADD;
-	}
+// ========================================================================
+// form
+// ========================================================================
+        Book ksiazka = new Book();
+        BeanItem<Book> woot = new BeanItem<Book>(ksiazka);
+        final FieldGroup fieldGroup = new FieldGroup();
+        fieldGroup.setBuffered(true);
+        fieldGroup.setItemDataSource(woot);
 
-	private class MyFormWindow extends Window {
-		private static final long serialVersionUID = 1L;
+// ========================================================================
+// Walidatory 
+// ========================================================================
+        FormLayout tableLayout = new FormLayout();
 
-		private Action action;
+        tableLayout.setImmediate(true);
+        tableLayout.setSpacing(true);
+        tableLayout.setMargin(true);
 
-		public MyFormWindow(Action act) {
-			this.action = act;
+        final Field<?> titleField = fieldGroup.buildAndBind("Tytuł Książki", "title");
+        titleField.addValidator(new CapitalLeterValidator());
+        titleField.addValidator(new StringLengthValidator("Zła długośc", 3, 50, false));
+        titleField.setRequired(true);
+        
 
-			setModal(true);
-			center();
-			
-			switch (action) {
-			case ADD:
-				setCaption("Dodaj nową osobę");
-				break;
-			case EDIT:
-				setCaption("Edytuj osobę");
-				break;
-			default:
-				break;
-			}
-			
+        final Field<?> authorField = fieldGroup.buildAndBind("Autor", "author");
+        authorField.addValidator(new CapitalLeterValidator());
+        authorField.addValidator(new StringLengthValidator("Zła długośc", 3, 50, false));
+        authorField.setRequired(true);
+        
+        final Field<?> ISBNField = fieldGroup.buildAndBind("Numer ISBN", "ISBN");
+        ISBNField.addValidator(new StringLengthValidator("Błędna wartość", 13, 13, false));
+        ISBNField.addValidator(new ISBNValidator());
+        ISBNField.setRequired(true);
+        
+        final Field<?> pagesNumber = fieldGroup.buildAndBind("Ilość stron", "pagesNumber");
+        pagesNumber.addValidator(new IntegerRangeValidator("Błędna ilość stron", 1, 2000));
+        pagesNumber.setRequired(true);
+        
 
-			final FormLayout form = new FormLayout();
-			final FieldGroup binder = new FieldGroup(personItem);
+        final Field<?> priceField = fieldGroup.buildAndBind("Cena książki", "price");
+        priceField.addValidator(new DoubleRangeValidator("Błędna cena książki", 1.00, 1000.00));
+        priceField.setRequired(true);
+        
 
-			final Button saveBtn = new Button(" Dodaj osobę ");
-			final Button cancelBtn = new Button(" Anuluj ");
+        tableLayout.addComponent(titleField);
+        tableLayout.addComponent(authorField);
+        tableLayout.addComponent(ISBNField);
+        tableLayout.addComponent(pagesNumber);
+        tableLayout.addComponent(priceField);
+// ========================================================================
+// Przyciski
+// ========================================================================
 
-			form.addComponent(binder.buildAndBind("Nazwisko", "lastName"));
-			form.addComponent(binder.buildAndBind("Rok urodzenia", "yob"));
-			form.addComponent(binder.buildAndBind("Imię", "firstName"));
+        HorizontalLayout buttons = new HorizontalLayout();
 
-			binder.setBuffered(true);
+        final Button btnDodaj = new Button("Dodaj");
+        final Button btnUsun = new Button("Usuń");
+        final Button btnEdytuj = new Button("Edytuj");
+        buttons.addComponent(btnDodaj);
+        buttons.addComponent(btnEdytuj);
+        buttons.addComponent(btnUsun);
+// ========================================================================
+// Layout
+// ========================================================================
+        mainLayout.addComponent(tabela);
+        mainLayout.addComponent(tableLayout);
+        mainLayout.addComponent(buttons);
+        tableLayout.addComponent(buttons);
 
-			binder.getField("lastName").setRequired(true);
-			binder.getField("firstName").setRequired(true);
+        tabela.addValueChangeListener(new ValueChangeListener() {
+            /**
+             *
+             */
+            private static final long serialVersionUID = 1L;
 
-			VerticalLayout fvl = new VerticalLayout();
-			fvl.setMargin(true);
-			fvl.addComponent(form);
+            @Override
+            public void valueChange(ValueChangeEvent event) {
+                if (tabela.getValue() != null) {
+                    Book temp = (Book) tabela.getValue();
+                    BeanItem<Book> bike = new BeanItem<Book>(temp);
+                    fieldGroup.setItemDataSource(bike);
 
-			HorizontalLayout hl = new HorizontalLayout();
-			hl.addComponent(saveBtn);
-			hl.addComponent(cancelBtn);
-			fvl.addComponent(hl);
+                }
+            }
+        });
+        btnDodaj.addClickListener(new ClickListener() {
+            /**
+             *
+             */
 
-			setContent(fvl);
+            private static final long serialVersionUID = 1L;
 
-			saveBtn.addClickListener(new ClickListener() {
+            @Override
+            public void buttonClick(ClickEvent event) {
 
-				private static final long serialVersionUID = 1L;
+                Book toot = ((BeanItem<Book>) fieldGroup.getItemDataSource()).getBean();
+                /*
+                 * Walidatory pól
+                 */
+                if (titleField.isValid() && authorField.isValid() &&
+                       ISBNField.isValid() && pagesNumber.isValid() && 
+                        priceField.isValid()) {
 
-				@Override
-				public void buttonClick(ClickEvent event) {
-					try {
-						binder.commit();
+                    beanContainer.addBean(new Book(toot.getTitle(), toot.getAuthor(), toot.getISBN(), 
+                            toot.getPagesNumber(), toot.getPrice()));
+                    Notification.show("Dodano nową książkę!");
+                } else {
+                    Notification.show("Błąd. Popraw dane i spróbuj ponownie");
+                }
+            }
+        });
+        btnUsun.addClickListener(new ClickListener() {
+            /**
+             *
+             */
+            private static final long serialVersionUID = 1L;
 
-						if (action == Action.ADD) {
-							personManager.addPerson(person);
-						} else if (action == Action.EDIT) {
-							personManager.updatePerson(person);
-						}
+            @Override
+            public void buttonClick(ClickEvent event) {
+                beanContainer.removeItem(tabela.getValue());
+            }
+        });
+        btnEdytuj.addClickListener(new ClickListener() {
+            /**
+             *
+             */
+            private static final long serialVersionUID = 1L;
 
-						persons.removeAllItems();
-						persons.addAll(personManager.findAll());
-						close();
-					} catch (CommitException e) {
-						e.printStackTrace();
-					}
-				}
-			});
-
-			cancelBtn.addClickListener(new ClickListener() {
-
-				private static final long serialVersionUID = 1L;
-
-				@Override
-				public void buttonClick(ClickEvent event) {
-					binder.discard();
-					close();
-				}
-			});
-		}
-	}
-
-	@Override
-	protected void init(VaadinRequest request) {
-
-		Button addPersonFormBtn = new Button("Add ");
-		Button deletePersonFormBtn = new Button("Delete");
-		Button editPersonFormBtn = new Button("Edit");
-
-		VerticalLayout vl = new VerticalLayout();
-		setContent(vl);
-
-		addPersonFormBtn.addClickListener(new ClickListener() {
-
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public void buttonClick(ClickEvent event) {
-				addWindow(new MyFormWindow(Action.ADD));
-			}
-		});
-
-		editPersonFormBtn.addClickListener(new ClickListener() {
-
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public void buttonClick(ClickEvent event) {
-				addWindow(new MyFormWindow(Action.EDIT));
-			}
-		});
-
-		deletePersonFormBtn.addClickListener(new ClickListener() {
-
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public void buttonClick(ClickEvent event) {
-				if (!person.getFirstName().isEmpty()) {
-					personManager.delete(person);
-					persons.removeAllItems();
-					persons.addAll(personManager.findAll());
-				}
-			}
-		});
-
-		HorizontalLayout hl = new HorizontalLayout();
-		hl.addComponent(addPersonFormBtn);
-		hl.addComponent(editPersonFormBtn);
-		hl.addComponent(deletePersonFormBtn);
-
-		final Table personsTable = new Table("Persons", persons);
-		personsTable.setColumnHeader("firstName", "Imię");
-		personsTable.setColumnHeader("lastName", "Nazwisko");
-		personsTable.setColumnHeader("yob", "Rok urodzenia");
-		personsTable.setSelectable(true);
-		personsTable.setImmediate(true);
-
-		personsTable.addValueChangeListener(new Property.ValueChangeListener() {
-
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public void valueChange(ValueChangeEvent event) {
-
-				Person selectedPerson = (Person) personsTable.getValue();
-				if (selectedPerson == null) {
-					person.setFirstName("");
-					person.setLastName("");
-					person.setYob(0);
-					person.setId(null);
-				} else {
-					person.setFirstName(selectedPerson.getFirstName());
-					person.setLastName(selectedPerson.getLastName());
-					person.setYob(selectedPerson.getYob());
-					person.setId(selectedPerson.getId());
-				}
-			}
-		});
-
-		vl.addComponent(hl);
-		vl.addComponent(personsTable);
-		
-		HorizontalLayout horizontalLayout = new HorizontalLayout();
-		Label label = new Label();
-		horizontalLayout.addComponent(label);
-		label.setValue(UI.getCurrent().toString());
-		
-		vl.addComponent(horizontalLayout);
-	}
-
+            @Override
+            public void buttonClick(ClickEvent event) {
+                try {
+                    fieldGroup.commit();
+                    tabela.refreshRowCache();
+                } catch (CommitException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        //setContent(mainContainer);
+        setContent(mainLayout);
+    }
 }
